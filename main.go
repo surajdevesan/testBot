@@ -11,5 +11,10 @@ func main() {
 			"text": "Event Detected",
 		})
 	})
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Test",
+		})
+	})
 	r.Run()
 }
