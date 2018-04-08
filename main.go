@@ -12,23 +12,25 @@ type SpaceStruct struct {
 	Type        string `json:"type"`
 }
 
+type MessageFormat struct {
+	Name   string `json:"name"`
+	Sender struct {
+		Name        string `json:"name"`
+		DisplayName string `json:"displayName"`
+		AvatarURL   string `json:"avatarUrl"`
+		Email       string `json:"email"`
+	} `json:"sender"`
+	Text   string `json:"text"`
+	Thread struct {
+		Name string `json:"name"`
+	} `json:"thread"`
+}
+
 type Request struct {
-	Type    string      `json:"type"`
-	Token   string      `json:"token"`
-	Space   SpaceStruct `json:"space"`
-	Message struct {
-		Name   string `json:"name"`
-		Sender struct {
-			Name        string `json:"name"`
-			DisplayName string `json:"displayName"`
-			AvatarURL   string `json:"avatarUrl"`
-			Email       string `json:"email"`
-		} `json:"sender"`
-		Text   string `json:"text"`
-		Thread struct {
-			Name string `json:"name"`
-		} `json:"thread"`
-	} `json:"message"`
+	Type    string        `json:"type"`
+	Token   string        `json:"token"`
+	Space   SpaceStruct   `json:"space"`
+	Message MessageFormat `json:"message"`
 }
 
 func main() {
@@ -43,7 +45,7 @@ func main() {
 		case "ADDED_TO_SPACE":
 			response = addToSpace(data.Space)
 		case "MESSAGE":
-			response = messageFromUser()
+			response = messageFromUser(data.Message)
 		}
 		// fmt.Printf("%s", string(x))
 		c.JSON(200, gin.H{
