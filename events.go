@@ -23,15 +23,43 @@ func getRepoName(repoInfo []GitHubRepoInfo) []string {
 	return repoNames
 }
 
+func addToken(message MessageFormat) {
+	token := "Need to be replaced"
+	email := message.Sender.Email
+	var userInfo = UserInfo{Token: token, Email: email}
+	fmt.Println("Declared token and email")
+	sess, err := connectToDb()
+	defer sess.Close()
+	db := setDB("test", sess)
+	if err == nil {
+		fmt.Println("Reached without error in declaring the database")
+		err := insertToCollection(userInfo, db, "test")
+		if err != nil {
+			fmt.Println("Error in insertion", err)
+			return
+		}
+		fmt.Println("Succesfully inserted to DB")
+	} else {
+		fmt.Println("Error in connection", err)
+	}
+}
+
 func messageFromUser(message MessageFormat) string {
 	repoInfo := make([]GitHubRepoInfo, 0)
 	if message.Text == "List all repos" {
+		sess, err := connectToDb()
+		db := setDB("TestDB", sess)
+		user, err := findFromCollection(message.Sender.Email, db.C("test"))
+		if user.Email == "" || err != nil {
+			fmt.Println("Error in acces token", user)
+			return "Access token issue"
+		}
 		urlData := RequestFormat{
 			url:     "https://api.github.com/users/surajdevesan/repos",
 			urlType: "GET",
 			headerData: Header{
 				name:   "Authentication",
-				header: getTokenHeader("Need to replace"),
+				header: getTokenHeader(user.Token),
 			},
 		}
 		res, err := GetRequest(urlData)
@@ -48,9 +76,12 @@ func messageFromUser(message MessageFormat) string {
 		if err != nil {
 			fmt.Println("Error at unmarshalling", err)
 		}
+		repoNames := getRepoName(repoInfo)
+		names := strings.Join(repoNames, "\n")
+		fmt.Println("Sucess", names)
+		return names
+	} else if message.Text == "Add token" {
+		addToken(message)
 	}
-	repoNames := getRepoName(repoInfo)
-	names := strings.Join(repoNames, "\n")
-	fmt.Println("Sucess", names)
-	return names
+	return "Default"
 }
