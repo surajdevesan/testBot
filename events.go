@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"regexp"
 	"strings"
 )
 
@@ -23,8 +25,15 @@ func getRepoName(repoInfo []GitHubRepoInfo) []string {
 	return repoNames
 }
 
-func addToken(message MessageFormat) {
-	token := "Need to be replaced"
+func addToken(message MessageFormat) string {
+	r, _ := regexp.Compile("`([a-z0-9]+)`")
+	tokenRes := r.FindAllStringSubmatch(message.Text, -1)
+	if len(tokenRes) != 1 && len(tokenRes[0]) != 1 {
+		log.Println("Error in getting token")
+		return "Error in getting token"
+	}
+	token := tokenRes[0][1]
+	log.Print("Adding token for user", message.Sender.Email, token)
 	email := message.Sender.Email
 	var userInfo = UserInfo{Token: token, Email: email}
 	fmt.Println("Declared token and email")
@@ -33,15 +42,17 @@ func addToken(message MessageFormat) {
 	db := setDB("test", sess)
 	if err == nil {
 		fmt.Println("Reached without error in declaring the database")
-		err := insertToCollection(userInfo, db, "test")
+		info, err := insertToCollection(userInfo, db, "test")
 		if err != nil {
 			fmt.Println("Error in insertion", err)
-			return
+			return "Error in DB"
 		}
-		fmt.Println("Succesfully inserted to DB")
+		fmt.Println("Succesfully inserted to DB", info)
 	} else {
 		fmt.Println("Error in connection", err)
+		return "Error in Connection"
 	}
+	return "Key added successfully"
 }
 
 func messageFromUser(message MessageFormat) string {
@@ -80,8 +91,8 @@ func messageFromUser(message MessageFormat) string {
 		names := strings.Join(repoNames, "\n")
 		fmt.Println("Sucess", names)
 		return names
-	} else if message.Text == "Add token" {
-		addToken(message)
+	} else if check, _ := regexp.MatchString("Add token `[a-z 0-9]+`", message.Text); check {
+		return addToken(message)
 	}
 	return "Default"
 }

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -21,15 +19,15 @@ func setDB(db string, sess *mgo.Session) *mgo.Database {
 	database := sess.DB(db)
 	return database
 }
-func insertToCollection(user UserInfo, db *mgo.Database, collection string) error {
-	fmt.Println("Heree", user.Email)
+func insertToCollection(user UserInfo, db *mgo.Database, collection string) (*mgo.ChangeInfo, error) {
 	c := db.C(collection)
-	err := c.Insert(&UserInfo{
+	m := make(map[string]string, 1)
+	m["email"] = user.Email
+	info, errInUpsert := c.Upsert(m, &UserInfo{
 		user.Email,
 		user.Token,
 	})
-	fmt.Println("Errored in insertting collectiong")
-	return err
+	return info, errInUpsert
 }
 
 func findFromCollection(email string, c *mgo.Collection) (UserInfo, error) {
